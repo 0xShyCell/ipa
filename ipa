@@ -1,0 +1,272 @@
+#!/usr/bin/env bash
+# =============================================================================
+# ipa – Network IP Address Formatter
+# =============================================================================
+set -uo pipefail
+
+VPN_KEYWORDS="tun|tap|vpn|wg|ppp|ipsec|vti|gre|gretap|erspan"
+
+# ── Help ──────────────────────────────────────────────────────────────────────
+show_help() {
+    cat <<'HELP'
+ipa – Network IP Address Formatter
+
+USAGE
+  ipa [version] [filter]
+
+VERSION  (optional, default: 4)
+  4          IPv4 addresses only
+  6          IPv6 addresses only
+  both       IPv4 and IPv6
+
+FILTER  (optional, default: all)
+  all        All interfaces
+  vpn        VPN interfaces only  (tun, tap, wg, ppp, …)
+  lan        LAN interfaces only
+  <iface>    Specific interface by name  (e.g. eth0, en0, tun0)
+
+EXAMPLES
+  ipa                  IPv4, all interfaces
+  ipa 6                IPv6, all interfaces
+  ipa both             IPv4 + IPv6, all interfaces
+  ipa 4 vpn            IPv4, VPN interfaces only
+  ipa 4 lan            IPv4, LAN interfaces only
+  ipa both eth0        IPv4 + IPv6, eth0 only
+  ipa tun0             Shorthand: IPv4, tun0 only
+
+FLAGS
+  -h, --help           Show this help message
+HELP
+}
+
+# ── Argument parsing ──────────────────────────────────────────────────────────
+show_ipv4=false
+show_ipv6=false
+iface_filter="all"
+
+parse_version() {
+    case "$1" in
+        4)       show_ipv4=true; return 0 ;;
+        6)       show_ipv6=true; return 0 ;;
+        both|a)  show_ipv4=true; show_ipv6=true; return 0 ;;
+        *)       return 1 ;;
+    esac
+}
+
+# Check for help flag anywhere
+for _a in "$@"; do
+    [[ "$_a" == "-h" || "$_a" == "--help" ]] && { show_help; exit 0; }
+done
+
+case $# in
+    0)  show_ipv4=true ;;
+    1)  parse_version "$1" || { show_ipv4=true; iface_filter="$1"; } ;;
+    2)  parse_version "$1" || { show_help; exit 1; }
+        iface_filter="$2" ;;
+    *)  show_help; exit 1 ;;
+esac
+
+# ── Colors ────────────────────────────────────────────────────────────────────
+BOLD=""; RESET=""; GREEN=""; YELLOW=""; CYAN=""; DIM=""; WHITE_BOLD=""
+if [[ -t 1 ]]; then
+    BOLD="$(tput bold     2>/dev/null)" || true
+    RESET="$(tput sgr0    2>/dev/null)" || true
+    GREEN="$(tput setaf 2 2>/dev/null)" || true
+    YELLOW="$(tput setaf 3 2>/dev/null)" || true
+    CYAN="$(tput setaf 6  2>/dev/null)" || true
+    DIM="$(tput dim       2>/dev/null)" || true
+    WHITE_BOLD="${BOLD}$(tput setaf 7 2>/dev/null)" || true
+fi
+
+# ── Box chars ─────────────────────────────────────────────────────────────────
+TL='┌'; TR='┐'; BL='└'; BR='┘'
+H='─';  V='│'
+LT='├'; RT='┤'; TT='┬'; BT='┴'; XX='┼'
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+repeat_char() {
+    local c="$1" n="$2" i out=""
+    for (( i=0; i<n; i++ )); do out+="$c"; done
+    printf '%s' "$out"
+}
+
+is_private_ipv4() {
+    case "$1" in
+        10.*|192.168.*) return 0 ;;
+        172.1[6-9].*|172.2[0-9].*|172.3[0-1].*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+row_passes_filter() {
+    local type="$1" iface="$2"
+    case "$iface_filter" in
+        all)  return 0 ;;
+        vpn)  [[ "$type" == "VPN" ]]   && return 0 || return 1 ;;
+        lan)  [[ "$type" == "LAN" ]]   && return 0 || return 1 ;;
+        *)    [[ "$iface" == "$iface_filter" ]] && return 0 || return 1 ;;
+    esac
+}
+
+# ── Data collection ───────────────────────────────────────────────────────────
+rows=()
+vpn_found=false
+current_iface=""
+
+collect_ipv4() {
+    local line ip type
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^[[:space:]]*[0-9]+:\ ([^:@]+) ]]; then
+            current_iface="${BASH_REMATCH[1]%% *}"; continue
+        fi
+        if [[ "$line" =~ inet[[:space:]]+([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+            ip="${BASH_REMATCH[1]}"
+            [[ "$ip" == "127.0.0.1" ]] && continue
+            if [[ "$current_iface" =~ $VPN_KEYWORDS ]]; then
+                type="VPN"; vpn_found=true
+            elif is_private_ipv4 "$ip"; then
+                type="LAN"
+            else
+                type="Other"
+            fi
+            row_passes_filter "$type" "$current_iface" && rows+=("${type}|${current_iface}|${ip}|")
+        fi
+    done < <(ip -4 addr show 2>/dev/null || true)
+}
+
+collect_ipv6() {
+    local line ip type first_block
+    while IFS= read -r line; do
+        if [[ "$line" =~ ^[[:space:]]*[0-9]+:\ ([^:@]+) ]]; then
+            current_iface="${BASH_REMATCH[1]%% *}"; continue
+        fi
+        if [[ "$line" =~ inet6[[:space:]]+([0-9a-f:]+) ]]; then
+            ip="${BASH_REMATCH[1]}"
+            [[ "$ip" == "::1" ]] && continue
+            [[ "$ip" =~ ^fe80  ]] && continue
+            first_block="$(printf '%s' "$ip" | awk -F: '{print tolower($1)}')"
+            if [[ "$current_iface" =~ $VPN_KEYWORDS ]]; then
+                type="VPN"; vpn_found=true
+            elif [[ "$first_block" =~ ^f[cd] ]]; then
+                type="LAN"
+            else
+                type="Other"
+            fi
+            row_passes_filter "$type" "$current_iface" && rows+=("${type}|${current_iface}||${ip}")
+        fi
+    done < <(ip -6 addr show 2>/dev/null || true)
+}
+
+if $show_ipv4; then collect_ipv4; fi
+if $show_ipv6; then collect_ipv6; fi
+
+# VPN placeholder only when no VPN was found and filter includes VPN rows
+if ! $vpn_found; then
+    case "$iface_filter" in all|vpn) rows+=("VPN|--|--|--") ;; esac
+fi
+
+if [[ ${#rows[@]} -eq 0 ]]; then
+    printf 'No interfaces matched filter: %s\n' "$iface_filter"
+    exit 0
+fi
+
+# ── Column setup ──────────────────────────────────────────────────────────────
+col_names=("Type" "Interface")
+col_align=("left" "center")
+col_widths=(4 9)
+
+if $show_ipv4; then col_names+=("IPv4 Address"); col_align+=("right"); col_widths+=(12); fi
+if $show_ipv6; then col_names+=("IPv6 Address"); col_align+=("right"); col_widths+=(12); fi
+num_cols=${#col_names[@]}
+
+for row in "${rows[@]}"; do
+    IFS='|' read -r t iface ipv4 ipv6 <<< "$row"
+    [[ ${#t}     -gt ${col_widths[0]} ]] && col_widths[0]=${#t}
+    [[ ${#iface} -gt ${col_widths[1]} ]] && col_widths[1]=${#iface}
+    if $show_ipv4 && [[ "$ipv4" != "--" ]]; then
+        [[ ${#ipv4} -gt ${col_widths[2]} ]] && col_widths[2]=${#ipv4}
+    fi
+    if $show_ipv6; then
+        v6idx=2; $show_ipv4 && v6idx=3
+        if [[ "$ipv6" != "--" ]]; then
+            [[ ${#ipv6} -gt ${col_widths[$v6idx]} ]] && col_widths[$v6idx]=${#ipv6}
+        fi
+    fi
+done
+
+# ── Rendering helpers ─────────────────────────────────────────────────────────
+hline() {
+    local lc="$1" sep="$2" rc="$3" out="${1}" i
+    for (( i=0; i<num_cols; i++ )); do
+        out+="$(repeat_char "$H" $(( col_widths[i] + 2 )))"
+        (( i < num_cols-1 )) && out+="${sep}"
+    done
+    printf '%s\n' "${out}${rc}"
+}
+
+make_cell() {
+    local raw="$1" colored="$2" width="$3" align="$4"
+    # Placeholder "--" always centered
+    [[ "$raw" == "--" ]] && align="center"
+    local extra=$(( width - ${#raw} ))
+    case "$align" in
+        left)
+            printf '%s' " ${colored}$(repeat_char ' ' "$extra") "
+            ;;
+        right)
+            printf '%s' "$(repeat_char ' ' $(( extra + 1 )))${colored} "
+            ;;
+        center)
+            local lp=$(( extra / 2 ))
+            local rp=$(( extra - lp ))
+            printf '%s' "$(repeat_char ' ' $(( lp + 1 )))${colored}$(repeat_char ' ' "$rp") "
+            ;;
+    esac
+}
+
+# Globals used by print_row
+row_raws=(); row_colored=(); row_aligns=()
+
+print_row() {
+    local line="${V}" i
+    for (( i=0; i<num_cols; i++ )); do
+        line+="$(make_cell "${row_raws[$i]}" "${row_colored[$i]}" "${col_widths[$i]}" "${row_aligns[$i]}")${V}"
+    done
+    printf '%s\n' "$line"
+}
+
+# ── Draw table ────────────────────────────────────────────────────────────────
+hline "$TL" "$TT" "$TR"
+
+# Header
+row_raws=(); row_colored=(); row_aligns=()
+for (( i=0; i<num_cols; i++ )); do
+    row_raws+=("${col_names[$i]}")
+    row_colored+=("${BOLD}${col_names[$i]}${RESET}")
+    row_aligns+=("${col_align[$i]}")
+done
+print_row
+
+hline "$LT" "$XX" "$RT"
+
+# Data rows
+for row in "${rows[@]}"; do
+    IFS='|' read -r t iface ipv4 ipv6 <<< "$row"
+
+    case "$t" in
+        LAN)   tc="${GREEN}${t}${RESET}"  ;;
+        VPN)   tc="${YELLOW}${t}${RESET}" ;;
+        Other) tc="${CYAN}${t}${RESET}"   ;;
+        *)     tc="$t" ;;
+    esac
+
+    [[ "$ipv4" == "--" || -z "$ipv4" ]] && ipv4c="${DIM}${ipv4}${RESET}" || ipv4c="${WHITE_BOLD}${ipv4}${RESET}"
+    [[ "$ipv6" == "--" || -z "$ipv6" ]] && ipv6c="${DIM}${ipv6}${RESET}" || ipv6c="${WHITE_BOLD}${ipv6}${RESET}"
+
+    row_raws=("$t" "$iface"); row_colored=("$tc" "$iface"); row_aligns=("left" "center")
+    if $show_ipv4; then row_raws+=("$ipv4"); row_colored+=("$ipv4c"); row_aligns+=("right"); fi
+    if $show_ipv6; then row_raws+=("$ipv6"); row_colored+=("$ipv6c"); row_aligns+=("right"); fi
+    print_row
+done
+
+hline "$BL" "$BT" "$BR"
