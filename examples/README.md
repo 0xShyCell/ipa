@@ -5,13 +5,13 @@ IPs. Not staged for this repo — these are actual sessions.
 
 | File | Command | What it shows |
 |---|---|---|
-| `raw/ipa-default.txt` | `ipa` | Default IPv4 view, all interfaces |
-| `raw/ipa-4.txt` | `ipa 4` | Explicit IPv4-only (identical to default) |
-| `raw/ipa-6.txt` | `ipa 6` | IPv6 view — no IPv6 VPN address present, placeholder row shown |
-| `raw/ipa-both.txt` | `ipa both` | Combined IPv4 + IPv6 columns in one table |
-| `raw/ipa-4-vpn.txt` | `ipa 4 vpn` | Filtered to VPN-type interfaces only |
-| `raw/ipa-tun0.txt` | `ipa tun0` | Single-argument shorthand, filtered to the `tun0` interface by name |
-| `raw/ipa-vpn.txt` | `ipa vpn` | Filtered to VPN type, default IPv4 |
+| `ipa-default.txt` | `ipa` | Default IPv4 view, all interfaces |
+| `ipa-4.txt` | `ipa 4` | Explicit IPv4-only (identical to default) |
+| `ipa-6.txt` | `ipa 6` | IPv6 view — no IPv6 VPN address present, placeholder row shown |
+| `ipa-both.txt` | `ipa both` | Combined IPv4 + IPv6 columns in one table |
+| `ipa-4-vpn.txt` | `ipa 4 vpn` | Filtered to VPN-type interfaces only |
+| `ipa-tun0.txt` | `ipa tun0` | Single-argument shorthand, filtered to the `tun0` interface by name |
+| `ipa-vpn.txt` | `ipa vpn` | Filtered to VPN type, default IPv4 |
 
 ## Before / after: finding your VPN IP mid-engagement
 
