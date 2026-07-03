@@ -13,19 +13,3 @@ What to capture, the exact command, and what it's meant to visually prove.
 | 6 | Capture | `ipa --help` | Documents the full flag/argument surface in one image, useful for anyone skimming the repo without reading the README |
 | 7 | Capture | `ipa nonexistent0` (a filter matching no interface) | Shows the "no interfaces matched filter" fallback message — proves error handling was considered, not just the happy path |
 | 8 | Capture (optional) | Wide terminal vs. narrow terminal, same command | Demonstrates the adaptive column widths claim in the README rather than just asserting it |
-
-## Naming convention
-
-`ipa-<mode>-<platform>.png`, e.g. `ipa-vpn-kali.png`, `ipa-both-macos.png`.
-Keeps it obvious which screenshot backs which README/examples claim without
-opening each file.
-
-## What NOT to include
-
-- Any screenshot showing your real public IP, real LAN subnet beyond
-  RFC1918 ranges, or a real target/box IP from an active engagement —
-  redact the way you already did in `ipa-default`/`ipa-both`
-- Screenshots of `ipa` running against anything you haven't gotten
-  permission to enumerate — this tool only reads your own local interfaces,
-  but keep the same discipline in what you show as you would for any other
-  tool output
