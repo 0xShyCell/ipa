@@ -16,7 +16,7 @@ Baseline output: LAN interfaces and Docker bridges correctly classified, VPN row
 
 ---
 
-### IPv6 and combined view
+### IPv6 and Both Mode (Kali)
 
 **Command**
 
@@ -48,7 +48,7 @@ ipa
 
 ![Default view on Kali](ipa-default-macOS.png)
 
-### IPv6 and combined view
+### IPv6 and Both mode (macOS)
 
 **Command**
 
