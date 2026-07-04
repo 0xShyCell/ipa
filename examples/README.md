@@ -3,17 +3,17 @@
 Real terminal output captured during lab work, IPs redacted where public/host
 IPs. Not staged for this repo — these are actual sessions.
 
-| File | Command | What it shows |
-|---|---|---|
-| `ipa-default.txt` | `ipa` | Default IPv4 view, all interfaces |
-| `ipa-4.txt` | `ipa 4` | Explicit IPv4-only (identical to default) |
-| `ipa-6.txt` | `ipa 6` | IPv6 view — no IPv6 VPN address present, placeholder row shown |
-| `ipa-both.txt` | `ipa both` | Combined IPv4 + IPv6 columns in one table |
-| `ipa-4-vpn.txt` | `ipa 4 vpn` | Filtered to VPN-type interfaces only |
-| `ipa-tun0.txt` | `ipa tun0` | Single-argument shorthand, filtered to the `tun0` interface by name |
-| `ipa-vpn.txt` | `ipa vpn` | Filtered to VPN type, default IPv4 |
+| File              | Command     | What it shows                                                       |
+| ----------------- | ----------- | ------------------------------------------------------------------- |
+| `ipa-default.txt` | `ipa`       | Default IPv4 view, all interfaces                                   |
+| `ipa-4.txt`       | `ipa 4`     | Explicit IPv4-only (identical to default)                           |
+| `ipa-6.txt`       | `ipa 6`     | IPv6 view — no IPv6 VPN address present, placeholder row shown      |
+| `ipa-both.txt`    | `ipa both`  | Combined IPv4 + IPv6 columns in one table                           |
+| `ipa-4-vpn.txt`   | `ipa 4 vpn` | Filtered to VPN-type interfaces only                                |
+| `ipa-tun0.txt`    | `ipa tun0`  | Single-argument shorthand, filtered to the `tun0` interface by name |
+| `ipa-vpn.txt`     | `ipa vpn`   | Filtered to VPN type, default IPv4                                  |
 
-## Before / After: finding your VPN IP mid-engagement
+## Before / after: finding your VPN IP mid-engagement
 
 **Before**, the manual equivalent of what these commands replace:
 
@@ -39,8 +39,8 @@ $ ipa vpn
 └──────┴───────────┴─────────────────┘
 ```
 
-`ipa tun0` and `ipa 4 vpn` produce the identical row (see `raw/ipa-tun0.txt`
-and `raw/ipa-4-vpn.txt`) — you can filter by type when you don't remember the
+`ipa tun0` and `ipa 4 vpn` produce the identical row (see `ipa-tun0.txt`
+and `ipa-4-vpn.txt`) — you can filter by type when you don't remember the
 interface name, or by name when you do.
 
 This is the real workflow this tool was built for: connect to a lab/OSCP/HTB
