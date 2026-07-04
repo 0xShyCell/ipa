@@ -16,26 +16,6 @@ Baseline output: LAN interfaces and Docker bridges correctly classified, VPN row
 
 ---
 
-### IPv6 and Both Mode (Kali)
-
-**Command**
-
-```bash
-ipa 6
-```
-
-![IPv6 mode on Kali](ipa-ipv6-kali.png)
-
-```bash
-ipa both
-```
-
-![Both mode on Kali](ipa-both-kali.png)
-
-Shows the column layout adapting: `ipa 6` alone collapses to a placeholder row when no IPv6 address is present anywhere, while `ipa both` adds the IPv6 column without breaking table alignment.
-
----
-
 ## macOS
 
 ### Default view
@@ -46,22 +26,4 @@ Shows the column layout adapting: `ipa 6` alone collapses to a placeholder row w
 ipa
 ```
 
-![Default view on Kali](ipa-default-macOS.png)
-
-### IPv6 and Both mode (macOS)
-
-**Command**
-
-```bash
-ipa 6
-```
-
-![IPv6 mode on macOS](ipa-ipv6-macOS.png)
-
-```bash
-ipa both
-```
-
-![Both mode on macOS](ipa-both-macOS.png)
-
-Same script, same output shape, running on macOS via `iproute2mac` — with real global IPv6 addresses present on `en0`, correctly classified as `Other` (not misclassified as `LAN`), confirming the ULA-prefix check doesn't false-positive on public IPv6 ranges.
+![Default view on macOS](ipa-default-macOS.png)
