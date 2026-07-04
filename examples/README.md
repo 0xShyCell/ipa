@@ -13,7 +13,7 @@ IPs. Not staged for this repo — these are actual sessions.
 | `ipa-tun0.txt`    | `ipa tun0`  | Single-argument shorthand, filtered to the `tun0` interface by name |
 | `ipa-vpn.txt`     | `ipa vpn`   | Filtered to VPN type, default IPv4                                  |
 
-## Before / after: finding your VPN IP mid-engagement
+## Before / After: Finding your VPN IP Mid-Engagement
 
 **Before**, the manual equivalent of what these commands replace:
 
