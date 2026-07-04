@@ -10,7 +10,7 @@
 ipa
 ```
 
-![Default view on Kali](ipa-default-kali-.png)
+![Default view on Kali](ipa-default-kali.png)
 
 Baseline output: LAN interfaces and Docker bridges correctly classified, VPN row shown as a placeholder since no VPN was connected in this capture.
 
@@ -46,16 +46,21 @@ Shows the column layout adapting: `ipa 6` alone collapses to a placeholder row w
 ipa
 ```
 
+![Default view on Kali](ipa-default-macOS.png)
+
 ### IPv6 and combined view
 
 **Command**
 
 ```bash
 ipa 6
-ipa both
 ```
 
 ![IPv6 mode on macOS](ipa-ipv6-macOS.png)
+
+```bash
+ipa both
+```
 
 ![Both mode on macOS](ipa-both-macOS.png)
 
